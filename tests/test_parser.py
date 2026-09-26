@@ -139,3 +139,41 @@ def test_model_validation():
         LinearProgram(c=[1, 1], A=[[1, 1]], b=[1], var_names=["x", "x"])
     with pytest.raises(ValueError):
         LinearProgram(c=[1, 1], A=[[1, 1], [1]], b=[1, 2])
+
+
+def test_exact_str():
+    from simplex_solver.utils import exact_str
+    assert exact_str(F(3, 10)) == "0.3"
+    assert exact_str(F(-7, 4)) == "-1.75"
+    assert exact_str(F(1, 3)) == "1/3"
+    assert exact_str(F(1, 2**20)) == "0.00000095367431640625"
+    assert exact_str(0.1) == "0.1" and exact_str(-2.5e-7) == "-0.00000025" and exact_str(5) == "5"
+
+
+def test_to_text_is_exact_for_long_numbers():
+    # numbers that the rounded display format cannot show exactly
+    lp = parse_lp("max: 0.1234567x + 1/3 y + 12345678901233/7 z\n"
+                  "x + y + z <= 0.00000001\nx - 1/3 y >= -2.5")
+    text = lp.to_text()
+    assert "~" not in text
+    assert parse_lp(text).to_dict() == lp.to_dict()
+
+
+def test_display_follows_the_arithmetic():
+    lp = parse_lp("min: 0.3x + 1/3 y\n0.21x + 1/2 y >= 1")
+    assert str(lp).splitlines()[0] == "Minimize  z = 0.3x + 1/3 y"           # as typed
+    assert "0.21x + 0.5y >= 1" in lp.formulation(exact=False)                 # decimals
+    assert lp.formulation(exact=False).splitlines()[0].endswith("0.3x + 0.3333y")
+    assert "21/100 x + 1/2 y >= 1" in lp.formulation(exact=True)              # fractions
+    float_report = lp.solve().report()
+    exact_report = lp.solve(exact=True).report()
+    assert "3/10" not in float_report and "21/100" not in float_report
+    assert "0.21y1" in float_report                                          # dual problem
+    assert "Minimize  z = 3/10 x + 1/3 y" in exact_report
+
+
+def test_to_text_with_names_that_look_like_exponents():
+    lp = LinearProgram(c=[3, 2], A=[[1, 1], [2, 5]], b=[4, 9], var_names=["e1", "E2"])
+    again = parse_lp(lp.to_text())
+    assert list(again.c) == [3, 2] and again.var_names == ["e1", "E2"]
+    assert again.objective_constant == 0

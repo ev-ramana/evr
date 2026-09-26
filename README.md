@@ -194,6 +194,9 @@ Tableaux use the usual textbook layout. The objective row holds `z_j - c_j`:
 * Phase 1 of the two-phase method minimises `r = a1 + a2 + ...`
 * Big-M rows are written with a symbolic `M`, e.g. `7M-4`, `(5/3)M+1/3`
 
+Numbers are shown as decimals rounded to `--digits` places, or as exact fractions
+everywhere (problem statement and tableaux alike) with `--exact`.
+
 Example (`python simplex.py examples/wyndor.lp --steps --exact`):
 
 ```
