@@ -1,0 +1,4 @@
+numpy>=1.21
+# optional, only needed to run the tests / the scipy comparison:
+# pytest
+# scipy

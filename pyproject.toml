@@ -1,0 +1,29 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "simplex-solver"
+version = "1.0.0"
+description = "Simplex method LP solver (two-phase, Big-M, dual simplex) with duality and sensitivity analysis"
+readme = "README.md"
+requires-python = ">=3.8"
+dependencies = ["numpy>=1.21"]
+keywords = ["linear programming", "simplex", "duality", "sensitivity analysis", "operations research"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Topic :: Scientific/Engineering :: Mathematics",
+    "Intended Audience :: Education",
+]
+
+[project.optional-dependencies]
+test = ["pytest", "scipy"]
+
+[project.scripts]
+simplex = "simplex_solver.cli:main"
+
+[tool.setuptools]
+packages = ["simplex_solver"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

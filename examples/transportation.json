@@ -1,0 +1,19 @@
+{
+  "_comment": "Transportation problem in JSON (row style). 3 plants ship to 4 cities; minimise the shipping cost. Supply rows use <=, demand rows use >=.",
+  "sense": "min",
+  "variables": ["P1_C1", "P1_C2", "P1_C3", "P1_C4",
+                "P2_C1", "P2_C2", "P2_C3", "P2_C4",
+                "P3_C1", "P3_C2", "P3_C3", "P3_C4"],
+  "objective": [8, 6, 10, 9,
+                9, 12, 13, 7,
+                14, 9, 16, 5],
+  "constraints": [
+    {"name": "supply_P1", "coefficients": [1,1,1,1, 0,0,0,0, 0,0,0,0], "type": "<=", "rhs": 35},
+    {"name": "supply_P2", "coefficients": [0,0,0,0, 1,1,1,1, 0,0,0,0], "type": "<=", "rhs": 50},
+    {"name": "supply_P3", "coefficients": [0,0,0,0, 0,0,0,0, 1,1,1,1], "type": "<=", "rhs": 40},
+    {"name": "demand_C1", "coefficients": [1,0,0,0, 1,0,0,0, 1,0,0,0], "type": ">=", "rhs": 45},
+    {"name": "demand_C2", "coefficients": [0,1,0,0, 0,1,0,0, 0,1,0,0], "type": ">=", "rhs": 20},
+    {"name": "demand_C3", "coefficients": [0,0,1,0, 0,0,1,0, 0,0,1,0], "type": ">=", "rhs": 30},
+    {"name": "demand_C4", "coefficients": [0,0,0,1, 0,0,0,1, 0,0,0,1], "type": ">=", "rhs": 30}
+  ]
+}
