@@ -1,0 +1,12 @@
+{
+  "_comment": "The Wyndor problem in matrix form: max c^T x  s.t.  A x (types) b",
+  "sense": "max",
+  "c": [3, 5],
+  "A": [[1, 0],
+        [0, 2],
+        [3, 2]],
+  "b": [4, 12, 18],
+  "types": ["<=", "<=", "<="],
+  "var_names": ["x1", "x2"],
+  "con_names": ["plant1", "plant2", "plant3"]
+}
