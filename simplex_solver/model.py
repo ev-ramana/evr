@@ -2,9 +2,11 @@
 
 from __future__ import annotations
 
+from fractions import Fraction
+
 import numpy as np
 
-from .utils import fmt_linear, fmt_num, to_fraction
+from .utils import exact_str, fmt_linear, fmt_num, to_fraction
 
 SENSES = {
     "max": "max", "maximize": "max", "maximise": "max", "maximum": "max",
@@ -48,6 +50,17 @@ def _numeric_array(values, what: str) -> np.ndarray:
         except (ValueError, TypeError, ZeroDivisionError) as exc:
             raise ValueError(f"{what}: could not read the numbers ({exc})") from exc
     raise ValueError(f"{what}: unsupported data type {arr.dtype}")
+
+
+def _display_number(v, exact, digits):
+    """The number to format: a Fraction (exact), a float (decimal) or, with
+    ``exact=None``, a float only when the fraction has a short decimal form."""
+    if exact:
+        return to_fraction(v)
+    if isinstance(v, Fraction) and (
+            exact is False or (v.numerator * 10**digits) % v.denominator == 0):
+        return float(v)
+    return v
 
 
 def exact_array(arr: np.ndarray) -> np.ndarray:
@@ -264,20 +277,32 @@ class LinearProgram:
         }
 
     # ------------------------------------------------------------ printing
-    def to_text(self, digits: int = 6) -> str:
-        """Algebraic text that :meth:`from_string` can read back."""
-        return self.formulation(digits=digits, parsable=True)
+    def to_text(self) -> str:
+        """Algebraic text with exact numbers, which :meth:`from_string` reads back unchanged."""
+        return self.formulation(parsable=True)
 
-    def formulation(self, digits: int = 4, parsable: bool = False) -> str:
-        """Human readable statement of the problem."""
+    def formulation(self, digits: int = 4, parsable: bool = False, exact=None) -> str:
+        """Human readable statement of the problem.
+
+        ``exact=True`` shows every number as a fraction and ``exact=False`` as a
+        decimal rounded to ``digits`` places (matching the solver's arithmetic).
+        ``exact=None`` shows fractions only when they have no short decimal form,
+        so ``0.3`` stays ``0.3`` and ``1/3`` stays ``1/3``.  ``parsable=True``
+        writes exact values in the input format.
+        """
+        if parsable:
+            fmt = exact_str
+        else:
+            def fmt(v):
+                return fmt_num(_display_number(v, exact, digits), digits)
         head = "Maximize" if self.sense == "max" else "Minimize"
-        obj = fmt_linear(self.c, self.var_names, digits, self.objective_constant)
+        obj = fmt_linear(self.c, self.var_names, digits, self.objective_constant, fmt=fmt)
         lines = [f"{self.sense}: {obj}"] if parsable else [f"{head}  {self.objective_name} = {obj}"]
         lines.append("subject to")
         width = max((len(n) for n in self.con_names), default=0)
         for i in range(self.num_constraints):
-            lhs = fmt_linear(self.A[i], self.var_names, digits)
-            rhs = fmt_num(self.b[i], digits)
+            lhs = fmt_linear(self.A[i], self.var_names, digits, fmt=fmt)
+            rhs = fmt(self.b[i])
             lines.append(f"  {self.con_names[i] + ':':<{width + 1}}  {lhs} {self.types[i]} {rhs}")
         lines.extend("  " + s for s in self.sign_lines(parsable))
         return "\n".join(lines)

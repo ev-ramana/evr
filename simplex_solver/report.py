@@ -3,7 +3,7 @@ sensitivity analysis and duality analysis."""
 
 from __future__ import annotations
 
-from .utils import fmt_bigm, fmt_linear, fmt_num, heading, text_table
+from .utils import fmt_bigm, fmt_linear, fmt_num, fmt_term, heading, text_table
 
 MAX_TABLEAU_COLS = 40      # wider tableaux are summarised instead of printed
 MAX_TABLEAU_ROWS = 60
@@ -15,9 +15,11 @@ def _f(x, digits):
 
 
 # --------------------------------------------------------------------------- problem
-def format_problem(lp, digits=4) -> str:
+def format_problem(lp, digits=4, exact=None) -> str:
+    """Problem statement; numbers follow the arithmetic (``exact``: fractions,
+    otherwise decimals)."""
     if lp.num_vars <= MAX_FORMULATION and lp.num_constraints <= MAX_FORMULATION:
-        return lp.formulation(digits)
+        return lp.formulation(digits, exact=exact)
     return (f"{'Maximize' if lp.sense == 'max' else 'Minimize'} {lp.objective_name} with "
             f"{lp.num_vars} variables and {lp.num_constraints} constraints "
             f"(too large to print; types: {lp.types.count('<=')} '<=', "
@@ -41,7 +43,7 @@ def format_standard_form(result, digits=4) -> str:
                      sf.c0_user)
     slack_names = [nm for nm, kd in zip(names, sf.kinds) if kd in "se"]
     if slack_names:
-        obj += " + " + " + ".join(f"0{nm}" for nm in slack_names)
+        obj += " + " + " + ".join(fmt_term(0, nm) for nm in slack_names)
     art_names = [nm for nm, kd in zip(names, sf.kinds) if kd == "a"]
     if art_names and result.method_key == "big-m":
         sign = "-" if lp.sense == "max" else "+"
@@ -357,7 +359,7 @@ def format_duality(result, dual_report=None, digits=4) -> str:
     dual = rep.dual
     f = lambda v: _f(v, digits)  # noqa: E731
     lines = ["Dual problem:"]
-    lines.append("\n".join("  " + ln for ln in format_problem(dual, digits).split("\n")))
+    lines.append("\n".join("  " + ln for ln in format_problem(dual, digits, result.exact).split("\n")))
     lines.append("")
     lines.append("(dual variable y_i belongs to primal constraint i; dual constraint j belongs "
                  "to primal variable j)")
@@ -423,7 +425,7 @@ def full_report(result, steps: bool = None, sensitivity: bool = True, duality: b
     """Complete report.  ``steps=None`` prints the iterations when they were recorded."""
     parts = []
     if show_problem:
-        parts += [heading("PROBLEM"), format_problem(result.lp, digits), ""]
+        parts += [heading("PROBLEM"), format_problem(result.lp, digits, result.exact), ""]
     if steps is None:
         steps = bool(result.steps)
     if steps:

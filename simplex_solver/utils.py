@@ -85,26 +85,53 @@ def fmt_bigm(p, q, digits: int = 4) -> str:
     return f"{m_part}+{qs}"
 
 
-def fmt_term(coef, name: str, digits: int = 4) -> str:
+def exact_str(value) -> str:
+    """Exact text for a number that the parser reads back unchanged: integers as
+    they are, terminating decimals in decimal notation (``0.3``), others as ``p/q``."""
+    f = to_fraction(value)
+    if f.denominator == 1:
+        return str(f.numerator)
+    d, twos, fives = f.denominator, 0, 0
+    while d % 2 == 0:
+        d //= 2
+        twos += 1
+    while d % 5 == 0:
+        d //= 5
+        fives += 1
+    if d != 1:
+        return f"{f.numerator}/{f.denominator}"
+    places = max(twos, fives)
+    scaled = f.numerator * (10**places // f.denominator)   # exact: denominator divides 10^places
+    text = str(abs(scaled)).rjust(places + 1, "0")
+    sign = "-" if scaled < 0 else ""
+    return f"{sign}{text[:-places]}.{text[-places:].rstrip('0')}"
+
+
+def fmt_term(coef, name: str, digits: int = 4, fmt=None) -> str:
     """Format ``|coef| * name`` for a linear expression (sign handled by caller)."""
-    s = fmt_num(abs(coef), digits)
+    s = fmt(abs(coef)) if fmt else fmt_num(abs(coef), digits)
     if s == "1":
         return name
-    if "/" in s:
-        return f"{s} {name}"
+    if "/" in s or name[:1] in "eE":
+        return f"{s} {name}"   # "3 e1", not "3e1", which would read as the number 30
     return f"{s}{name}" if name[:1].isalpha() else f"{s} {name}"
 
 
-def fmt_linear(coeffs, names, digits: int = 4, constant=0) -> str:
-    """Format a linear expression such as ``3x1 + 5x2 - x3``."""
+def fmt_linear(coeffs, names, digits: int = 4, constant=0, fmt=None) -> str:
+    """Format a linear expression such as ``3x1 + 5x2 - x3``.
+
+    ``fmt`` formats one number (default: :func:`fmt_num` with ``digits`` decimals).
+    """
+    if fmt is None:
+        def fmt(v):
+            return fmt_num(v, digits)
     parts = []
     for a, name in zip(coeffs, names):
-        if fmt_num(a, digits) == "0":
+        if fmt(a) == "0":
             continue
-        term = fmt_term(a, name, digits)
-        parts.append(("-" if a < 0 else "+", term))
-    if constant is not None and fmt_num(constant, digits) != "0":
-        parts.append(("-" if constant < 0 else "+", fmt_num(abs(constant), digits)))
+        parts.append(("-" if a < 0 else "+", fmt_term(a, name, digits, fmt)))
+    if constant is not None and fmt(constant) != "0":
+        parts.append(("-" if constant < 0 else "+", fmt(abs(constant))))
     if not parts:
         return "0"
     sign, term = parts[0]

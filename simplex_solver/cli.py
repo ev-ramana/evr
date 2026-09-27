@@ -263,7 +263,7 @@ def main(argv=None) -> int:
                    bland=args.bland, max_iter=args.max_iter)
 
     if args.summary:
-        parts = [heading("PROBLEM"), format_problem(lp, args.digits), "",
+        parts = [heading("PROBLEM"), format_problem(lp, args.digits, res.exact), "",
                  heading("RESULT"), format_solution(res, args.digits)]
         text = "\n".join(parts)
     else:
